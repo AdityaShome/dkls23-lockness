@@ -1,0 +1,16 @@
+[package]
+name = "dkls23-lockness"
+version = "0.1.0"
+edition = "2021"
+description = "Architectural MVP scaffold for DKLs23 threshold ECDSA in the Lockness ecosystem"
+
+[dependencies]
+generic-ec = { version = "0.5", features = ["curve-secp256k1", "serde"] }
+rand = "0.8"
+round-based = { version = "0.4", features = ["derive", "sim"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+thiserror = "1"
+
+[dev-dependencies]
