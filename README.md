@@ -1,12 +1,5 @@
 
-# DKLs23 Lockness — Threshold ECDSA MVP
-
-<div align="center">
-	<img src="https://img.shields.io/badge/status-MVP-blue" alt="MVP Status"/>
-	<img src="https://img.shields.io/badge/security-honest-yellow" alt="Honest Security"/>
-</div>
-
----
+# DKLs23 Lockness, Threshold ECDSA MVP
 
 ## What does this project do?
 
@@ -24,7 +17,7 @@
 ---
 
 ## Protocol Flowchart
-<img width="1116" height="3727" alt="image" src="https://github.com/user-attachments/assets/67dcf0a9-496b-44e6-a7d2-aa8b0e415a14" />
+<img width="1116" height="3727" alt="image" src="https://github.com/user-attachments/assets/2ffb2add-e570-4435-95b5-f6ed3a71040c" />
 
 
 ---
