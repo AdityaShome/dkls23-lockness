@@ -17,8 +17,6 @@ pub enum Error {
     InvalidNoncePoint,
     #[error("invalid signature")]
     InvalidSignature,
-    #[error("MtA / OT subprotocol is not implemented in this MVP")]
-    MtaNotImplemented,
     #[error("serialization error: {0}")]
     Serialization(String),
 }

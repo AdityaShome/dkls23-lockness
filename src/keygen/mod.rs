@@ -3,6 +3,7 @@ use rand::{rngs::StdRng, RngCore, SeedableRng};
 use round_based::rounds_router::{simple_store::RoundInput, RoundsRouter};
 use round_based::{Delivery, Mpc, MpcParty, Outgoing, PartyIndex, SinkExt};
 use sha2::{Digest, Sha256};
+use std::collections::BTreeMap;
 
 use crate::{Error, KeyShare, KeygenCommitment, KeygenOpen, Msg, Result};
 
@@ -46,7 +47,10 @@ where
         .complete(round1)
         .await
         .map_err(|err| Error::Protocol(err.to_string()))?;
-    let _ = commitments;
+    let commitments = commitments
+        .into_iter_indexed()
+        .map(|(sender, _msg_id, commitment_msg)| (sender, commitment_msg))
+        .collect::<BTreeMap<_, _>>();
 
     let open_msg: Outgoing<Msg<E>> = Outgoing::broadcast(Msg::KeygenR2(KeygenOpen {
             secret_share: secret_share.as_ref().clone(),
@@ -67,11 +71,11 @@ where
     let mut participants = Vec::new();
 
     for (sender, _msg_id, open) in openings.into_iter_indexed() {
+        let commitment_msg = commitments
+            .get(&sender)
+            .ok_or_else(|| Error::Protocol("missing keygen commitment".to_string()))?;
         let expected_commitment = commitment_for(&open.secret_share, &open.salt);
-        if sender == i && expected_commitment != commitment {
-            return Err(Error::CommitmentMismatch { sender });
-        }
-        if expected_commitment != commitment_for(&open.secret_share, &open.salt) {
+        if commitment_msg.commitment != expected_commitment {
             return Err(Error::CommitmentMismatch { sender });
         }
 

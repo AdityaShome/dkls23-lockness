@@ -1,7 +1,7 @@
-//! Pre-signing for the DKLs23 MVP.
+//! Pre-signing for the DKLs23 Lockness implementation.
 //!
 //! This module keeps the real network shape around nonce commitments and openings,
-//! while the OT / MtA boundary stays isolated behind a mock trait.
+//! while the MtA boundary stays isolated behind a backend trait.
 
 use core::fmt;
 
@@ -11,23 +11,36 @@ use round_based::rounds_router::{simple_store::RoundInput, RoundsRouter};
 use round_based::{Delivery, Mpc, MpcParty, Outgoing, PartyIndex, SinkExt};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use std::collections::BTreeMap;
 
-use crate::{Error, Msg, PresignMessage, PresignOpen, Result};
+use crate::{Error, KeyShare, Msg, PresignMessage, PresignOpen, Result};
 
-pub mod mock_ot;
+pub mod mta;
 
-pub use mock_ot::{MockMta, MultiplicationToAddition};
+pub use mta::{DirectMta, MultiplicationToAddition};
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(bound = "")]
 pub struct Presignature<E: Curve> {
     pub nonce_point: Point<E>,
     pub aggregate_nonce: Scalar<E>,
+    pub nonce_secret_product_share: Scalar<E>,
     pub local_nonce_share: SecretScalar<E>,
     pub participants: Vec<PartyIndex>,
     pub threshold: u16,
     pub party_index: PartyIndex,
 }
+
+impl<E: Curve> PartialEq for Presignature<E> {
+    fn eq(&self, other: &Self) -> bool {
+        self.nonce_point == other.nonce_point
+            && self.aggregate_nonce == other.aggregate_nonce
+            && self.participants == other.participants
+            && self.threshold == other.threshold
+    }
+}
+
+impl<E: Curve> Eq for Presignature<E> {}
 
 impl<E: Curve> Presignature<E> {
     pub fn local_nonce_share(&self) -> &SecretScalar<E> {
@@ -40,6 +53,7 @@ impl<E: Curve> fmt::Debug for Presignature<E> {
         f.debug_struct("Presignature")
             .field("nonce_point", &self.nonce_point)
             .field("aggregate_nonce", &self.aggregate_nonce)
+            .field("nonce_secret_product_share", &"<redacted>")
             .field("participants", &self.participants)
             .field("threshold", &self.threshold)
             .field("party_index", &self.party_index)
@@ -66,10 +80,20 @@ fn sample_nonzero_nonce<E: Curve>(rng: &mut StdRng) -> SecretScalar<E> {
     }
 }
 
-pub async fn run<E, M>(party: M, i: PartyIndex, n: u16, threshold: u16, seed: u64) -> Result<Presignature<E>>
+pub async fn run<E, M, T>(
+    party: M,
+    key_share: &KeyShare<E>,
+    mut mta: T,
+    i: PartyIndex,
+    n: u16,
+    threshold: u16,
+    seed: u64,
+) -> Result<Presignature<E>>
 where
     E: Curve,
     M: Mpc<ProtocolMessage = Msg<E>>,
+    T: MultiplicationToAddition<E>,
+    T::Error: core::fmt::Debug,
 {
     let MpcParty { delivery, .. } = party.into_party();
     let (incomings, mut outgoings) = Delivery::split(delivery);
@@ -101,7 +125,10 @@ where
         .complete(round1)
         .await
         .map_err(|err| Error::Protocol(err.to_string()))?;
-    let _ = commitments;
+    let commitments = commitments
+        .into_iter_indexed()
+        .map(|(sender, _msg_id, commitment_msg)| (sender, commitment_msg))
+        .collect::<BTreeMap<_, _>>();
 
     let open_msg: Outgoing<Msg<E>> = Outgoing::broadcast(Msg::PresignR2(PresignOpen {
         nonce_share: local_nonce_scalar.clone(),
@@ -122,12 +149,16 @@ where
     let mut aggregate_nonce = Scalar::<E>::zero();
 
     for (sender, _msg_id, open) in openings.into_iter_indexed() {
+        let commitment_msg = commitments
+            .get(&sender)
+            .ok_or_else(|| Error::Protocol("missing presign commitment".to_string()))?;
+
         if open.nonce_share.is_zero() {
             return Err(Error::ZeroNonce);
         }
 
         let expected_commitment = nonce_commitment_for(&open.nonce_share, &open.salt);
-        if expected_commitment != commitment {
+        if commitment_msg.nonce_commitment != expected_commitment {
             return Err(Error::CommitmentMismatch { sender });
         }
 
@@ -145,6 +176,17 @@ where
     aggregate_nonce = &aggregate_nonce + &local_nonce_scalar;
     participants.insert(usize::from(i), i);
 
+    if participants.len() < usize::from(threshold) {
+        return Err(Error::Protocol("not enough parties to form a presignature".to_string()));
+    }
+
+    let nonce_secret_product_share = mta
+        .multiply_to_additive_share(
+            local_nonce_scalar.clone(),
+            key_share.local_secret_share().as_ref().clone(),
+        )
+        .map_err(|err| Error::Protocol(format!("MtA backend failed: {err:?}")))?;
+
     if aggregate_nonce.is_zero() || aggregate_nonce_point.is_zero() {
         return Err(Error::ZeroNonce);
     }
@@ -152,6 +194,7 @@ where
     Ok(Presignature {
         nonce_point: aggregate_nonce_point,
         aggregate_nonce,
+        nonce_secret_product_share,
         local_nonce_share,
         participants,
         threshold,

@@ -9,7 +9,7 @@ use core::fmt;
 use generic_ec::{Curve, Point, Scalar};
 use serde::{Deserialize, Serialize};
 
-use crate::{Error, Result};
+use crate::{presign::Presignature, Error, Result};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(bound = "")]
@@ -100,4 +100,21 @@ pub fn verify<E: Curve>(public_key: &Point<E>, message_hash: &[u8; 32], signatur
 
     let candidate_r = point_x_scalar(&candidate)?;
     Ok(candidate_r == signature.r)
+}
+
+pub fn sign_with_presignature<E, S>(
+    secret_key: S,
+    presignature: &Presignature<E>,
+    message_hash: &[u8; 32],
+) -> Result<Signature<E>>
+where
+    E: Curve,
+    S: AsRef<Scalar<E>>,
+{
+    let expected_nonce_point = Point::<E>::generator() * &presignature.aggregate_nonce;
+    if expected_nonce_point != presignature.nonce_point {
+        return Err(Error::InvalidNoncePoint);
+    }
+
+    sign(secret_key, &presignature.aggregate_nonce, message_hash)
 }

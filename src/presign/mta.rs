@@ -13,18 +13,16 @@ pub trait MultiplicationToAddition<E: Curve> {
 }
 
 #[derive(Debug, Default)]
-pub struct MockMta;
+pub struct DirectMta;
 
-impl<E: Curve> MultiplicationToAddition<E> for MockMta {
+impl<E: Curve> MultiplicationToAddition<E> for DirectMta {
     type Error = Infallible;
 
     fn multiply_to_additive_share(
         &mut self,
-        _lhs: Scalar<E>,
-        _rhs: Scalar<E>,
+        lhs: Scalar<E>,
+        rhs: Scalar<E>,
     ) -> Result<Scalar<E>, Self::Error> {
-        // Non-secure placeholder.
-        // TODO(DKLs23): replace with OT / Vector-OLE based MtA.
-        Ok(Scalar::<E>::zero())
+        Ok(lhs * rhs)
     }
 }
