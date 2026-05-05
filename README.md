@@ -59,14 +59,6 @@
 ```bash
 cargo test
 ```
-
----
-
-## Documentation
-
-- [Paper mapping](docs/paper_mapping.md) — See how the code maps to the DKLs23 paper
-- [Security boundaries](docs/security_boundaries.md) — What is real, what is mocked
-
 ---
 
 ## Why this matters
