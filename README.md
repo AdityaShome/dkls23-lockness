@@ -63,4 +63,4 @@ cargo test
 
 ## Why this matters
 
-Threshold ECDSA lets you split a private key across multiple parties, so no single party can ever sign alone or leak the key. This is critical for secure wallets, HSMs, and distributed trust systems. DKLs23 is a modern, efficient protocol for this — and this repo shows how to build it honestly, step by step.
+This MVP shows that the DKLs23 paper can be translated into a clean Lockness style Rust layout with typed protocol flow, curve-generic key material, and simulation-backed tests. It gives a starting point for the cryptographic work that is still ahead, while being explicit about what is implemented and what remains deferred.
