@@ -5,7 +5,7 @@ use round_based::{Delivery, Mpc, MpcParty, Outgoing, PartyIndex, SinkExt};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
-use crate::{Error, KeyShare, KeygenCommitment, KeygenOpen, Msg, Result};
+use crate::{validate_party_configuration, Error, KeyShare, KeygenCommitment, KeygenOpen, Msg, Result};
 
 pub fn commitment_for<E: Curve>(secret_share: &Scalar<E>, salt: &[u8; 32]) -> [u8; 32] {
     let mut hasher = Sha256::new();
@@ -21,6 +21,8 @@ where
     E: Curve,
     M: Mpc<ProtocolMessage = Msg<E>>,
 {
+    validate_party_configuration(n, threshold, i)?;
+
     let MpcParty { delivery, .. } = party.into_party();
     let (incomings, mut outgoings) = Delivery::split(delivery);
 

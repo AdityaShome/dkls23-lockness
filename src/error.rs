@@ -7,6 +7,12 @@ pub type Result<T> = core::result::Result<T, Error>;
 pub enum Error {
     #[error("round-based protocol error: {0}")]
     Protocol(String),
+    #[error("invalid protocol configuration: n={n}, threshold={threshold}, party_index={party_index}")]
+    InvalidConfiguration {
+        n: u16,
+        threshold: u16,
+        party_index: PartyIndex,
+    },
     #[error("commitment mismatch for party {sender}")]
     CommitmentMismatch { sender: PartyIndex },
     #[error("secret share was zero")]

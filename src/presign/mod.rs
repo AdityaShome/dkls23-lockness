@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
-use crate::{Error, KeyShare, Msg, PresignMessage, PresignOpen, Result};
+use crate::{validate_party_configuration, Error, KeyShare, Msg, PresignMessage, PresignOpen, Result};
 
 pub mod mta;
 
@@ -95,6 +95,8 @@ where
     T: MultiplicationToAddition<E>,
     T::Error: core::fmt::Debug,
 {
+    validate_party_configuration(n, threshold, i)?;
+
     let MpcParty { delivery, .. } = party.into_party();
     let (incomings, mut outgoings) = Delivery::split(delivery);
 
