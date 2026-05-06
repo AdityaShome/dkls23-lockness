@@ -13,6 +13,11 @@ pub enum Error {
         threshold: u16,
         party_index: PartyIndex,
     },
+    #[error("invalid participant set: expected {expected}, found {found}")]
+    InvalidParticipantSet {
+        expected: u16,
+        found: usize,
+    },
     #[error("commitment mismatch for party {sender}")]
     CommitmentMismatch { sender: PartyIndex },
     #[error("secret share was zero")]

@@ -14,6 +14,7 @@ use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
 use crate::{validate_party_configuration, Error, KeyShare, Msg, PresignMessage, PresignOpen, Result};
+use crate::protocol::validate_participant_set;
 
 pub mod mta;
 
@@ -177,6 +178,8 @@ where
     aggregate_nonce_point = &aggregate_nonce_point + &local_nonce_point;
     aggregate_nonce = &aggregate_nonce + &local_nonce_scalar;
     participants.insert(usize::from(i), i);
+
+    validate_participant_set(n, &participants)?;
 
     if participants.len() < usize::from(threshold) {
         return Err(Error::Protocol("not enough parties to form a presignature".to_string()));

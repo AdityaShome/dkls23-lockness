@@ -6,6 +6,7 @@ use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
 use crate::{validate_party_configuration, Error, KeyShare, KeygenCommitment, KeygenOpen, Msg, Result};
+use crate::protocol::validate_participant_set;
 
 pub fn commitment_for<E: Curve>(secret_share: &Scalar<E>, salt: &[u8; 32]) -> [u8; 32] {
     let mut hasher = Sha256::new();
@@ -90,6 +91,8 @@ where
     public_key = &public_key + &public_share;
     public_shares.insert(usize::from(i), public_share);
     participants.insert(usize::from(i), i);
+
+    validate_participant_set(n, &participants)?;
 
     Ok(KeyShare::new(
         public_key,
