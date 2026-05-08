@@ -15,6 +15,10 @@
 - Simulation tests for protocol correctness
 
 ---
+## Example output:
+<img width="1242" height="187" alt="image" src="https://github.com/user-attachments/assets/6c15312f-b2e2-4f70-badb-395299633bee" />
+<img width="1242" height="187" alt="image" src="https://github.com/user-attachments/assets/f55bd696-0872-4097-8649-f768497f659b" />
+
 
 ## Protocol Flowchart
 <img width="1116" height="3727" alt="image" src="https://github.com/user-attachments/assets/2ffb2add-e570-4435-95b5-f6ed3a71040c" />
