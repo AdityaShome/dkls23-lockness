@@ -18,7 +18,8 @@ pub fn validate_party_configuration(n: u16, threshold: u16, party_index: PartyIn
 
 pub fn validate_participant_set(expected: u16, participants: &[PartyIndex]) -> Result<()> {
     let unique_count = participants.iter().copied().collect::<BTreeSet<_>>().len();
-    if participants.len() != usize::from(expected) || unique_count != participants.len() {
+    let in_range = participants.iter().all(|&participant| participant < expected);
+    if participants.len() != usize::from(expected) || unique_count != participants.len() || !in_range {
         return Err(Error::InvalidParticipantSet {
             expected,
             found: participants.len(),
@@ -60,6 +61,11 @@ mod tests {
     #[test]
     fn rejects_incomplete_participants() {
         assert!(validate_participant_set(3, &[0, 1]).is_err());
+    }
+
+    #[test]
+    fn rejects_out_of_range_participants() {
+        assert!(validate_participant_set(3, &[0, 1, 3]).is_err());
     }
 
     #[test]

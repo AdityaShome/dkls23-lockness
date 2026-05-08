@@ -7,7 +7,7 @@
 
 **Key features:**
 
-- Honest, readable protocol structure — no fake security claims
+- Honest, readable protocol structure
 - Multi-party key generation (MPC DKG)
 - Pre-signing and signing helpers
 - Curve-generic cryptography (works for any supported curve)
@@ -22,7 +22,7 @@
 
 ---
 
-## How it works (in plain English)
+## How it works
 
 1. **Key Generation:** Each party creates a secret share, commits to it, then reveals it. All parties verify everyone was honest and compute a shared public key.
 2. **Pre-signing:** Each party samples a random nonce, commits, and reveals. (The real protocol would use advanced OT/MtA here; this MVP uses a mock.)

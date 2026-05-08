@@ -1,4 +1,5 @@
 use dkls23_lockness::keygen;
+use dkls23_lockness::Error;
 use dkls23_lockness::presign::{nonce_commitment_for, run as presign_run, DirectMta, MultiplicationToAddition};
 use dkls23_lockness::signing::{sign, sign_with_presignature, verify};
 use dkls23_lockness::KeyShare;
@@ -131,4 +132,55 @@ fn presign_to_sign_round_trip_verifies() {
         .expect("verification should succeed");
 
     assert!(valid);
+}
+
+#[test]
+fn presign_rejects_invalid_threshold() {
+    let n = 3usize;
+    let threshold = 2u16;
+
+    let keygen_output = sim::run(n as u16, |i, party| {
+        keygen::run::<Secp256k1, _>(party, i, n as u16, threshold, i as u64)
+    })
+    .expect("keygen simulation should run")
+    .expect_ok()
+    .expect_eq();
+
+    let key_shares: Vec<KeyShare<Secp256k1>> = (0..n)
+        .map(|index| {
+            KeyShare::new(
+                keygen_output.public_key,
+                keygen_output.public_shares.clone(),
+                keygen_output.participants.clone(),
+                threshold,
+                index as u16,
+                sample_keygen_secret(index as u64),
+            )
+        })
+        .collect();
+
+    let results = sim::run(n as u16, {
+        let key_shares = key_shares.clone();
+        move |i, party| {
+            let key_share = key_shares[usize::from(i)].clone();
+            async move {
+                presign_run::<Secp256k1, _, _>(
+                    party,
+                    &key_share,
+                    DirectMta,
+                    i,
+                    n as u16,
+                    0,
+                    200 + u64::from(i),
+                )
+                .await
+            }
+        }
+    })
+    .expect("presign simulation should run");
+
+    assert!(results
+        .0
+        .iter()
+        .all(|result| matches!(result, Err(Error::InvalidConfiguration { threshold: 0, .. }))));
 }
