@@ -21,9 +21,9 @@
 
 ## Benchmarks
 
-Benchmark plots are saved in [bench_results](bench_results):
+Benchmark plots are saved in bench_results:
 
-- [benchmark_flows.png](bench_results/benchmark_flows.png)
+![benchmark_flows.png](bench_results/benchmark_flows.png)
 
 To regenerate them:
 
